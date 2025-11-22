@@ -1784,12 +1784,56 @@
             }
         }
 
+        // Data cleanup function (simulated)
+        function cleanupExpiredData() {
+            // Ensure data structures exist before cleanup
+            if (!window.appData) {
+                window.appData = {
+                    user: {
+                        locationHistory: [],
+                        dataRetention: {
+                            locationHistoryRetention: 30,
+                            activitiesRetention: 90,
+                            lastCleanup: Date.now()
+                        }
+                    },
+                    activities: []
+                };
+            }
+            
+            if (!window.appData.user) {
+                window.appData.user = { locationHistory: [], dataRetention: {} };
+            }
+            
+            if (!window.appData.user.dataRetention) {
+                window.appData.user.dataRetention = {
+                    locationHistoryRetention: 30,
+                    activitiesRetention: 90,
+                    lastCleanup: Date.now()
+                };
+            }
+            
+            if (!window.appData.user.locationHistory) {
+                window.appData.user.locationHistory = [];
+            }
+            
+            if (!window.appData.activities) {
+                window.appData.activities = [];
+            }
+            
+            // Now safe to update lastCleanup
+            window.appData.user.dataRetention.lastCleanup = Date.now();
+        }
+
         // Auto-advance splash screen
         setTimeout(() => {
             if (document.getElementById('splash').classList.contains('active')) {
                 navigateTo('onboarding1');
             }
         }, 2000);
+        
+        // Initialize app data
+        cleanupExpiredData();
 
         // Close modals on outside click
         document.querySelectorAll('.modal').forEach(modal => {

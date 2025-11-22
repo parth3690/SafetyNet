@@ -584,6 +584,20 @@ class DataStore {
     const data = this.getAll();
     const now = Date.now();
     
+    // Ensure user object exists
+    if (!data.user) {
+      data.user = this.getDefaultData().user;
+    }
+    
+    // Ensure dataRetention object exists
+    if (!data.user.dataRetention) {
+      data.user.dataRetention = {
+        locationHistoryRetention: 30,
+        activitiesRetention: 90,
+        lastCleanup: now
+      };
+    }
+    
     // Clean location history (30 days)
     const locationRetentionDays = safePropertyAccess(
       data.user.dataRetention,
@@ -604,8 +618,13 @@ class DataStore {
       { component: 'DataStore', action: 'cleanupExpiredData', now, locationRetention }
     );
     
+    // Ensure locationHistory exists
+    if (!data.user.locationHistory) {
+      data.user.locationHistory = [];
+    }
+    
     data.user.locationHistory = safeArrayFilter(
-      data.user.locationHistory || [],
+      data.user.locationHistory,
       loc => loc && loc.timestamp && loc.timestamp > locationCutoff,
       { component: 'DataStore', action: 'cleanupExpiredData' }
     );
@@ -630,12 +649,18 @@ class DataStore {
       { component: 'DataStore', action: 'cleanupExpiredData', now, activityRetention }
     );
     
+    // Ensure activities array exists
+    if (!data.activities) {
+      data.activities = [];
+    }
+    
     data.activities = safeArrayFilter(
-      data.activities || [],
+      data.activities,
       act => act && act.timestamp && act.timestamp > activityCutoff,
       { component: 'DataStore', action: 'cleanupExpiredData' }
     );
     
+    // Now safe to set lastCleanup
     data.user.dataRetention.lastCleanup = now;
     data.lastUpdated = now;
     this.save(data);
