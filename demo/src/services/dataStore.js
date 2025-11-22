@@ -233,7 +233,13 @@ class DataStore {
 
   // User methods
   getUser() {
-    return this.getAll().user;
+    const data = this.getAll();
+    // Ensure user object exists
+    if (!data || !data.user) {
+      // Return default user structure
+      return this.getDefaultData().user;
+    }
+    return data.user;
   }
 
   updateUser(updates) {
@@ -294,6 +300,17 @@ class DataStore {
   // Compliance: Consent management (GDPR Art. 7)
   updateConsent(consentType, granted, version = "2.0") {
     const data = this.getAll();
+    // Ensure consents object exists
+    if (!data.user.consents) {
+      data.user.consents = {
+        locationTracking: false,
+        locationSharing: false,
+        analytics: false,
+        marketing: false,
+        consentDate: null,
+        consentVersion: "2.0"
+      };
+    }
     data.user.consents[consentType] = granted;
     if (granted) {
       data.user.consents.consentDate = Date.now();
@@ -306,12 +323,27 @@ class DataStore {
 
   // Compliance: Check if consent exists (GDPR Art. 7)
   hasConsent(consentType) {
-    return this.getUser().consents[consentType] === true;
+    const user = this.getUser();
+    if (!user || !user.consents) {
+      return false;
+    }
+    return user.consents[consentType] === true;
   }
 
   // Compliance: Withdraw consent (GDPR Art. 7(3))
   withdrawConsent(consentType) {
     const data = this.getAll();
+    // Ensure consents object exists
+    if (!data.user.consents) {
+      data.user.consents = {
+        locationTracking: false,
+        locationSharing: false,
+        analytics: false,
+        marketing: false,
+        consentDate: null,
+        consentVersion: "2.0"
+      };
+    }
     data.user.consents[consentType] = false;
     
     // Compliance: If location consent withdrawn, stop collecting (GDPR Art. 7(3))

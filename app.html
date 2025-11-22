@@ -247,6 +247,65 @@
             border: 2px solid #4A90E2;
         }
 
+        .text-input.error {
+            border-color: #FF3B30;
+        }
+
+        .text-input.success {
+            border-color: #34C759;
+        }
+
+        .error-message {
+            color: #FF3B30;
+            font-size: 13px;
+            margin-top: 4px;
+            padding-left: 4px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            color: #34C759;
+            font-size: 13px;
+            margin-top: 4px;
+            padding-left: 4px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #8E8E93;
+            margin-top: 4px;
+            padding-left: 4px;
+        }
+
+        .city-selector {
+            margin-bottom: 20px;
+        }
+
+        .city-select {
+            width: 100%;
+            height: 56px;
+            background: #F8F9FA;
+            border: 1px solid #E1E4E8;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 17px;
+            color: #1C1C1E;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231C1C1E' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+
         .divider {
             text-align: center;
             margin: 24px 0;
@@ -910,14 +969,19 @@
                 <div class="form-subtitle">Sign up to start protecting yourself</div>
                 <div class="input-group">
                     <label class="input-label">📱 Phone Number</label>
-                    <input type="tel" class="text-input" placeholder="+1 (___) ___-____" id="phoneInput">
+                    <input type="tel" class="text-input" placeholder="+1 (512) 555-0123 or (512) 555-0123" id="phoneInput" maxlength="20" oninput="validatePhoneInput(this)">
+                    <div class="error-message" id="phoneError"></div>
+                    <div class="success-message" id="phoneSuccess"></div>
+                    <div class="input-hint">US: (XXX) XXX-XXXX | International: +[country code][number]</div>
                 </div>
                 <div class="divider">OR</div>
                 <div class="input-group">
                     <label class="input-label">📧 Email Address</label>
-                    <input type="email" class="text-input" placeholder="your@email.com" id="emailInput">
+                    <input type="email" class="text-input" placeholder="your@email.com" id="emailInput" maxlength="254" oninput="validateEmailInput(this)">
+                    <div class="error-message" id="emailError"></div>
+                    <div class="success-message" id="emailSuccess"></div>
                 </div>
-                <button class="primary-button" onclick="completeRegistration()">Continue</button>
+                <button class="primary-button" id="continueButton" onclick="completeRegistration()" disabled>Continue</button>
                 <div class="terms-text">By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></div>
             </div>
 
@@ -1225,13 +1289,30 @@
         </div>
     </div>
 
-    <div class="modal" id="travelModal">
+            <div class="modal" id="travelModal">
         <div class="modal-content">
             <div class="modal-icon">✈️</div>
             <div class="modal-title">Travel Mode</div>
-            <div class="modal-text">Where are you traveling to?</div>
-            <input type="text" class="text-input" placeholder="Destination" style="margin-bottom: 16px;">
-            <button class="modal-button" onclick="closeModal(); alert('Travel mode activated! ✅')">Start Travel Mode</button>
+            <div class="modal-text">Select your city or enter destination</div>
+            <div class="city-selector">
+                <select class="city-select" id="citySelect" onchange="handleCityChange()" style="margin-bottom: 16px;">
+                    <option value="">Select a city...</option>
+                    <option value="austin">Austin, TX</option>
+                    <option value="newYork">New York, NY</option>
+                    <option value="losAngeles">Los Angeles, CA</option>
+                    <option value="chicago">Chicago, IL</option>
+                    <option value="houston">Houston, TX</option>
+                    <option value="phoenix">Phoenix, AZ</option>
+                    <option value="philadelphia">Philadelphia, PA</option>
+                    <option value="sanAntonio">San Antonio, TX</option>
+                    <option value="sanDiego">San Diego, CA</option>
+                    <option value="dallas">Dallas, TX</option>
+                    <option value="sanJose">San Jose, CA</option>
+                </select>
+            </div>
+            <input type="text" class="text-input" placeholder="Or enter custom destination" id="destinationInput" style="margin-bottom: 16px;" oninput="validateDestinationInput(this)">
+            <div class="error-message" id="destinationError"></div>
+            <button class="modal-button" id="travelButton" onclick="startTravelMode()">Start Travel Mode</button>
             <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
         </div>
     </div>
@@ -1257,14 +1338,31 @@
         </div>
     </div>
 
-    <div class="modal" id="addMemberModal">
+            <div class="modal" id="addMemberModal">
         <div class="modal-content">
             <div class="modal-icon">👥</div>
             <div class="modal-title">Add Circle Member</div>
             <div class="modal-text">Invite someone to your safety circle</div>
-            <input type="text" class="text-input" placeholder="Name" style="margin-bottom: 12px;">
-            <input type="tel" class="text-input" placeholder="Phone Number" style="margin-bottom: 16px;">
-            <button class="modal-button" onclick="closeModal(); alert('Invitation sent! ✅')">Send Invitation</button>
+            <div class="input-group">
+                <label class="input-label">Name *</label>
+                <input type="text" class="text-input" placeholder="Enter name" id="memberNameInput" maxlength="50" oninput="validateNameInput(this)" style="margin-bottom: 12px;">
+                <div class="error-message" id="memberNameError"></div>
+                <div class="success-message" id="memberNameSuccess"></div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Phone Number</label>
+                <input type="tel" class="text-input" placeholder="+1 (512) 555-0123" id="memberPhoneInput" maxlength="20" oninput="validatePhoneInput(this)" style="margin-bottom: 12px;">
+                <div class="error-message" id="memberPhoneError"></div>
+                <div class="success-message" id="memberPhoneSuccess"></div>
+            </div>
+            <div class="divider" style="margin: 12px 0; font-size: 13px;">OR</div>
+            <div class="input-group">
+                <label class="input-label">Email Address</label>
+                <input type="email" class="text-input" placeholder="member@email.com" id="memberEmailInput" maxlength="254" oninput="validateEmailInput(this)" style="margin-bottom: 16px;">
+                <div class="error-message" id="memberEmailError"></div>
+                <div class="success-message" id="memberEmailSuccess"></div>
+            </div>
+            <button class="modal-button" id="addMemberButton" onclick="addCircleMember()">Add to Circle</button>
             <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
         </div>
     </div>
@@ -1329,19 +1427,329 @@
             });
         }
 
+        // Validation Functions
+        const US_CITIES = {
+            austin: { name: 'Austin', state: 'TX', locations: ['Downtown', 'University', 'Airport'] },
+            newYork: { name: 'New York', state: 'NY', locations: ['Manhattan', 'Times Square', 'Central Park'] },
+            losAngeles: { name: 'Los Angeles', state: 'CA', locations: ['Downtown', 'Hollywood', 'Santa Monica'] },
+            chicago: { name: 'Chicago', state: 'IL', locations: ['Downtown', 'Millennium Park', 'Navy Pier'] },
+            houston: { name: 'Houston', state: 'TX', locations: ['Downtown', 'Space Center', 'Museum District'] },
+            phoenix: { name: 'Phoenix', state: 'AZ', locations: ['Downtown', 'Scottsdale', 'Tempe'] },
+            philadelphia: { name: 'Philadelphia', state: 'PA', locations: ['Center City', 'Independence Hall', 'University City'] },
+            sanAntonio: { name: 'San Antonio', state: 'TX', locations: ['Downtown', 'River Walk', 'The Alamo'] },
+            sanDiego: { name: 'San Diego', state: 'CA', locations: ['Downtown', 'Balboa Park', 'La Jolla'] },
+            dallas: { name: 'Dallas', state: 'TX', locations: ['Downtown', 'Deep Ellum', 'Uptown'] },
+            sanJose: { name: 'San Jose', state: 'CA', locations: ['Downtown', 'Santana Row', 'Willow Glen'] }
+        };
+
+        function validatePhone(phone) {
+            if (!phone || phone.trim() === '') {
+                return { valid: false, error: 'Phone number is required' };
+            }
+            const cleaned = phone.replace(/[^\d+]/g, '');
+            if (cleaned.startsWith('+')) {
+                if (cleaned.length < 12 || cleaned.length > 18) {
+                    return { valid: false, error: 'Invalid international phone format' };
+                }
+                return { valid: true };
+            } else {
+                const digitsOnly = cleaned.replace(/\D/g, '');
+                if (digitsOnly.length === 10 || (digitsOnly.length === 11 && digitsOnly.startsWith('1'))) {
+                    return { valid: true };
+                } else {
+                    return { valid: false, error: 'US phone number must be 10 digits' };
+                }
+            }
+        }
+
+        function validateEmail(email) {
+            if (!email || email.trim() === '') {
+                return { valid: false, error: 'Email address is required' };
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.trim())) {
+                return { valid: false, error: 'Please enter a valid email address' };
+            }
+            if (email.length > 254) {
+                return { valid: false, error: 'Email address is too long' };
+            }
+            return { valid: true };
+        }
+
+        function validateName(name) {
+            if (!name || name.trim() === '') {
+                return { valid: false, error: 'Name is required' };
+            }
+            const trimmed = name.trim();
+            if (trimmed.length < 2) {
+                return { valid: false, error: 'Name must be at least 2 characters' };
+            }
+            if (trimmed.length > 50) {
+                return { valid: false, error: 'Name must be less than 50 characters' };
+            }
+            if (/\d/.test(trimmed)) {
+                return { valid: false, error: 'Name cannot contain numbers' };
+            }
+            const nameRegex = /^[a-zA-Z\s'-]+$/;
+            if (!nameRegex.test(trimmed)) {
+                return { valid: false, error: 'Name can only contain letters, spaces, hyphens, and apostrophes' };
+            }
+            return { valid: true };
+        }
+
+        function validateDestination(destination) {
+            if (!destination || destination.trim() === '') {
+                return { valid: false, error: 'Destination is required' };
+            }
+            const trimmed = destination.trim();
+            if (trimmed.length < 2) {
+                return { valid: false, error: 'Destination is too short' };
+            }
+            if (trimmed.length > 100) {
+                return { valid: false, error: 'Destination is too long (max 100 characters)' };
+            }
+            return { valid: true };
+        }
+
+        function formatPhoneInput(value) {
+            const digits = value.replace(/\D/g, '');
+            if (value.startsWith('+')) {
+                return '+' + digits;
+            }
+            if (digits.length <= 3) {
+                return digits;
+            } else if (digits.length <= 6) {
+                return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+            } else {
+                return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+            }
+        }
+
+        function validatePhoneInput(input) {
+            const value = input.value;
+            const formatted = formatPhoneInput(value);
+            if (value !== formatted && !value.startsWith('+')) {
+                input.value = formatted;
+            }
+            const validation = validatePhone(value);
+            const errorEl = input.parentElement.querySelector('.error-message');
+            const successEl = input.parentElement.querySelector('.success-message');
+            
+            if (errorEl) {
+                if (!validation.valid && value.length > 5) {
+                    errorEl.textContent = validation.error;
+                    errorEl.classList.add('show');
+                    input.classList.add('error');
+                    input.classList.remove('success');
+                } else {
+                    errorEl.classList.remove('show');
+                    input.classList.remove('error');
+                }
+            }
+            
+            if (successEl && validation.valid && value.length > 5) {
+                successEl.textContent = '✓ Valid phone number';
+                successEl.classList.add('show');
+                input.classList.add('success');
+            } else if (successEl) {
+                successEl.classList.remove('show');
+            }
+            
+            updateContinueButton();
+        }
+
+        function validateEmailInput(input) {
+            const value = input.value.toLowerCase().replace(/\s/g, '');
+            if (input.value !== value) {
+                input.value = value;
+            }
+            const validation = validateEmail(value);
+            const errorEl = input.parentElement.querySelector('.error-message');
+            const successEl = input.parentElement.querySelector('.success-message');
+            
+            if (errorEl) {
+                if (!validation.valid && value.includes('@')) {
+                    errorEl.textContent = validation.error;
+                    errorEl.classList.add('show');
+                    input.classList.add('error');
+                    input.classList.remove('success');
+                } else {
+                    errorEl.classList.remove('show');
+                    input.classList.remove('error');
+                }
+            }
+            
+            if (successEl && validation.valid && value.includes('@')) {
+                successEl.textContent = '✓ Valid email address';
+                successEl.classList.add('show');
+                input.classList.add('success');
+            } else if (successEl) {
+                successEl.classList.remove('show');
+            }
+            
+            updateContinueButton();
+        }
+
+        function validateNameInput(input) {
+            const value = input.value.replace(/[^a-zA-Z\s'-]/g, '');
+            if (input.value !== value) {
+                input.value = value;
+            }
+            const validation = validateName(value);
+            const errorEl = input.parentElement.querySelector('.error-message');
+            const successEl = input.parentElement.querySelector('.success-message');
+            
+            if (errorEl) {
+                if (!validation.valid && value.length > 0) {
+                    errorEl.textContent = validation.error;
+                    errorEl.classList.add('show');
+                    input.classList.add('error');
+                    input.classList.remove('success');
+                } else {
+                    errorEl.classList.remove('show');
+                    input.classList.remove('error');
+                }
+            }
+            
+            if (successEl && validation.valid && value.length > 0) {
+                successEl.textContent = '✓ Valid name';
+                successEl.classList.add('show');
+                input.classList.add('success');
+            } else if (successEl) {
+                successEl.classList.remove('show');
+            }
+            
+            updateAddMemberButton();
+        }
+
+        function validateDestinationInput(input) {
+            const value = input.value;
+            const validation = validateDestination(value);
+            const errorEl = document.getElementById('destinationError');
+            
+            if (errorEl) {
+                if (!validation.valid && value.length > 0) {
+                    errorEl.textContent = validation.error;
+                    errorEl.classList.add('show');
+                    input.classList.add('error');
+                } else {
+                    errorEl.classList.remove('show');
+                    input.classList.remove('error');
+                }
+            }
+            
+            updateTravelButton();
+        }
+
+        function updateContinueButton() {
+            const phone = document.getElementById('phoneInput').value;
+            const email = document.getElementById('emailInput').value;
+            const phoneValid = phone ? validatePhone(phone).valid : false;
+            const emailValid = email ? validateEmail(email).valid : false;
+            const button = document.getElementById('continueButton');
+            
+            if (button) {
+                button.disabled = !(phoneValid || emailValid);
+            }
+        }
+
+        function updateAddMemberButton() {
+            const name = document.getElementById('memberNameInput').value;
+            const phone = document.getElementById('memberPhoneInput').value;
+            const email = document.getElementById('memberEmailInput').value;
+            const nameValid = validateName(name).valid;
+            const phoneValid = phone ? validatePhone(phone).valid : false;
+            const emailValid = email ? validateEmail(email).valid : false;
+            const button = document.getElementById('addMemberButton');
+            
+            if (button) {
+                button.disabled = !(nameValid && (phoneValid || emailValid));
+            }
+        }
+
+        function updateTravelButton() {
+            const city = document.getElementById('citySelect').value;
+            const destination = document.getElementById('destinationInput').value;
+            const button = document.getElementById('travelButton');
+            
+            if (button) {
+                button.disabled = !(city || validateDestination(destination).valid);
+            }
+        }
+
+        function handleCityChange() {
+            const cityId = document.getElementById('citySelect').value;
+            const destinationInput = document.getElementById('destinationInput');
+            if (cityId && US_CITIES[cityId]) {
+                const city = US_CITIES[cityId];
+                destinationInput.value = `${city.name}, ${city.state}`;
+                destinationInput.classList.add('success');
+            } else {
+                destinationInput.value = '';
+                destinationInput.classList.remove('success');
+            }
+            updateTravelButton();
+        }
+
+        function startTravelMode() {
+            const city = document.getElementById('citySelect').value;
+            const destination = document.getElementById('destinationInput').value;
+            
+            if (city && US_CITIES[city]) {
+                const cityName = US_CITIES[city].name;
+                closeModal();
+                alert(`Travel mode activated to ${cityName}! ✅`);
+            } else if (validateDestination(destination).valid) {
+                closeModal();
+                alert(`Travel mode activated to ${destination}! ✅`);
+            } else {
+                alert('Please select a city or enter a valid destination');
+            }
+        }
+
+        function addCircleMember() {
+            const name = document.getElementById('memberNameInput').value;
+            const phone = document.getElementById('memberPhoneInput').value;
+            const email = document.getElementById('memberEmailInput').value;
+            
+            const nameValid = validateName(name).valid;
+            const phoneValid = phone ? validatePhone(phone).valid : false;
+            const emailValid = email ? validateEmail(email).valid : false;
+            
+            if (!nameValid) {
+                alert('Please enter a valid name');
+                return;
+            }
+            
+            if (!phoneValid && !emailValid) {
+                alert('Please provide either a phone number or email address');
+                return;
+            }
+            
+            closeModal();
+            alert('Circle member added! ✅');
+            // Reset form
+            document.getElementById('memberNameInput').value = '';
+            document.getElementById('memberPhoneInput').value = '';
+            document.getElementById('memberEmailInput').value = '';
+        }
+
         // Registration
         function completeRegistration() {
             const phone = document.getElementById('phoneInput').value;
             const email = document.getElementById('emailInput').value;
+            const phoneValid = phone ? validatePhone(phone).valid : false;
+            const emailValid = email ? validateEmail(email).valid : false;
             
-            if (phone || email) {
-                // Simulate registration process
-                setTimeout(() => {
-                    navigateTo('home');
-                }, 500);
-            } else {
-                alert('Please enter a phone number or email');
+            if (!phoneValid && !emailValid) {
+                alert('Please enter a valid phone number or email address');
+                return;
             }
+            
+            // Simulate registration process
+            setTimeout(() => {
+                navigateTo('home');
+            }, 500);
         }
 
         // Emergency handlers

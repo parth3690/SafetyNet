@@ -5,6 +5,7 @@ import MapView from '../components/MapView';
 import ConsentDialog from '../components/ConsentDialog';
 import {useDataStore} from '../hooks/useDataStore';
 import {AUSTIN_LOCATIONS} from '../services/dataStore';
+import {validateDestination} from '../utils/validation';
 import './HomeScreen.css';
 
 const HomeScreen = () => {
