@@ -3,17 +3,16 @@
  * Simulates database with localStorage persistence
  */
 
-// Austin, TX coordinates
-const AUSTIN_CENTER = {
-  lat: 30.2672,
-  lng: -97.7431
-};
+import { safeArrayFilter, safeArraySlice, safeNumberOperation, safePropertyAccess, handleError } from '../utils/errorHandler';
+import errorLogger from './errorLogger';
+import { getDefaultCity, getCityById } from '../data/usCities';
 
-// Initial location (downtown Austin)
+// Get default city (Austin)
+const DEFAULT_CITY = getDefaultCity();
 const INITIAL_LOCATION = {
-  lat: 30.2672,
-  lng: -97.7431,
-  address: "Downtown Austin, TX",
+  lat: DEFAULT_CITY.center.lat,
+  lng: DEFAULT_CITY.center.lng,
+  address: `Downtown ${DEFAULT_CITY.name}, ${DEFAULT_CITY.stateCode}`,
   timestamp: Date.now()
 };
 
@@ -36,7 +35,15 @@ class DataStore {
       const data = localStorage.getItem(this.storageKey);
       return data ? JSON.parse(data) : null;
     } catch (e) {
-      console.error('Error loading data:', e);
+      const errorMessage = handleError(e, {
+        component: 'DataStore',
+        action: 'load',
+        storageKey: this.storageKey
+      });
+      errorLogger.logError('StorageError', errorMessage, e, {
+        component: 'DataStore',
+        action: 'load'
+      });
       return null;
     }
   }
@@ -47,7 +54,15 @@ class DataStore {
       localStorage.setItem(this.storageKey, JSON.stringify(data));
       return true;
     } catch (e) {
-      console.error('Error saving data:', e);
+      const errorMessage = handleError(e, {
+        component: 'DataStore',
+        action: 'save',
+        storageKey: this.storageKey
+      });
+      errorLogger.logError('StorageError', errorMessage, e, {
+        component: 'DataStore',
+        action: 'save'
+      });
       return false;
     }
   }
@@ -59,6 +74,7 @@ class DataStore {
 
   // Get default data structure
   getDefaultData() {
+    const defaultCity = getDefaultCity();
     return {
       user: {
         name: "Sarah",
@@ -72,6 +88,7 @@ class DataStore {
         status: "safe", // safe, walking, going_out, traveling, emergency
         emergencyTier: null, // null, 1, 2, 3
         lastCheckIn: Date.now() - 7200000, // 2 hours ago
+        selectedCity: defaultCity.id, // Current city selection
         // Compliance: Consent tracking (GDPR Art. 7, CCPA)
         consents: {
           locationTracking: false, // Must be explicitly granted
@@ -145,14 +162,66 @@ class DataStore {
         monitoring: true,
         sensitivity: "medium",
         safeZones: [
-          { name: "Home", lat: 30.2672, lng: -97.7431, radius: 100 },
-          { name: "Work", lat: 30.2747, lng: -97.7403, radius: 100 },
-          { name: "Gym", lat: 30.2600, lng: -97.7500, radius: 50 }
+          { name: "Home", lat: defaultCity.center.lat, lng: defaultCity.center.lng, radius: 100 },
+          { name: "Work", lat: defaultCity.center.lat + 0.0075, lng: defaultCity.center.lng + 0.0028, radius: 100 },
+          { name: "Gym", lat: defaultCity.center.lat - 0.0072, lng: defaultCity.center.lng - 0.0069, radius: 50 }
         ],
         notifications: true
       },
       lastUpdated: Date.now()
     };
+  }
+
+  // City selection methods
+  getSelectedCity() {
+    const data = this.getAll();
+    const cityId = safePropertyAccess(data.user, 'selectedCity', 'austin', {
+      component: 'DataStore',
+      action: 'getSelectedCity'
+    });
+    return getCityById(cityId) || getDefaultCity();
+  }
+
+  setSelectedCity(cityId) {
+    const city = getCityById(cityId);
+    if (!city) {
+      const error = new Error(`City not found: ${cityId}`);
+      handleError(error, { component: 'DataStore', action: 'setSelectedCity', cityId });
+      return false;
+    }
+
+    const data = this.getAll();
+    data.user.selectedCity = cityId;
+    
+    // Update current location to city center
+    const newLocation = {
+      lat: city.center.lat,
+      lng: city.center.lng,
+      address: `Downtown ${city.name}, ${city.stateCode}`,
+      timestamp: Date.now()
+    };
+    data.user.currentLocation = newLocation;
+    data.user.locationHistory = [newLocation];
+    
+    // Update safe zones to city locations
+    const cityLocations = Object.values(city.locations);
+    if (cityLocations.length >= 3) {
+      data.settings.safeZones = [
+        { name: "Home", lat: cityLocations[0].lat, lng: cityLocations[0].lng, radius: 100 },
+        { name: "Work", lat: cityLocations[1].lat, lng: cityLocations[1].lng, radius: 100 },
+        { name: "Gym", lat: cityLocations[2].lat, lng: cityLocations[2].lng, radius: 50 }
+      ];
+    }
+    
+    data.lastUpdated = Date.now();
+    this.save(data);
+    return true;
+  }
+
+  // Get locations for current city
+  getCityLocations() {
+    const city = this.getSelectedCity();
+    return city.locations || {};
   }
 
   // Reset all data
@@ -198,10 +267,23 @@ class DataStore {
     data.user.locationHistory.push(newLocation);
     
     // Compliance: Data retention - 30 days max (GDPR Art. 5(1)(e))
-    const retentionDays = data.user.dataRetention.locationHistoryRetention;
-    const cutoffTime = Date.now() - (retentionDays * 24 * 60 * 60 * 1000);
-    data.user.locationHistory = data.user.locationHistory.filter(
-      loc => loc.timestamp > cutoffTime
+    const retentionDays = safePropertyAccess(
+      data.user.dataRetention,
+      'locationHistoryRetention',
+      30,
+      { component: 'DataStore', action: 'updateLocation' }
+    );
+    
+    const cutoffTime = safeNumberOperation(
+      () => Date.now() - (retentionDays * 24 * 60 * 60 * 1000),
+      Date.now() - (30 * 24 * 60 * 60 * 1000), // Default 30 days
+      { component: 'DataStore', action: 'updateLocation', retentionDays }
+    );
+    
+    data.user.locationHistory = safeArrayFilter(
+      data.user.locationHistory || [],
+      loc => loc && loc.timestamp && loc.timestamp > cutoffTime,
+      { component: 'DataStore', action: 'updateLocation' }
     );
     
     data.lastUpdated = Date.now();
@@ -250,31 +332,67 @@ class DataStore {
 
   // Simulate movement (for demo)
   simulateMovement(destination, duration = 5000) {
-    return new Promise((resolve) => {
-      const startLocation = this.getCurrentLocation();
-      const steps = 20;
-      const stepTime = duration / steps;
-      let currentStep = 0;
-
-      const interval = setInterval(() => {
-        currentStep++;
-        const progress = currentStep / steps;
+    return new Promise((resolve, reject) => {
+      try {
+        const startLocation = this.getCurrentLocation();
         
-        const newLat = startLocation.lat + (destination.lat - startLocation.lat) * progress;
-        const newLng = startLocation.lng + (destination.lng - startLocation.lng) * progress;
-
-        this.updateLocation({
-          lat: newLat,
-          lng: newLng,
-          address: destination.address || `Moving to destination...`
-        });
-
-        if (currentStep >= steps) {
-          clearInterval(interval);
-          this.updateLocation(destination);
-          resolve(destination);
+        if (!startLocation || !destination) {
+          const error = new Error('Invalid location data for movement simulation');
+          handleError(error, { component: 'DataStore', action: 'simulateMovement' });
+          reject(error);
+          return;
         }
-      }, stepTime);
+        
+        const steps = 20;
+        const stepTime = safeNumberOperation(
+          () => duration / steps,
+          250, // Default 250ms per step
+          { component: 'DataStore', action: 'simulateMovement', duration, steps }
+        );
+        let currentStep = 0;
+
+        const interval = setInterval(() => {
+          try {
+            currentStep++;
+            const progress = safeNumberOperation(
+              () => currentStep / steps,
+              0,
+              { component: 'DataStore', action: 'simulateMovement', currentStep, steps }
+            );
+            
+            const newLat = safeNumberOperation(
+              () => startLocation.lat + (destination.lat - startLocation.lat) * progress,
+              startLocation.lat,
+              { component: 'DataStore', action: 'simulateMovement', startLat: startLocation.lat, destLat: destination.lat, progress }
+            );
+            
+            const newLng = safeNumberOperation(
+              () => startLocation.lng + (destination.lng - startLocation.lng) * progress,
+              startLocation.lng,
+              { component: 'DataStore', action: 'simulateMovement', startLng: startLocation.lng, destLng: destination.lng, progress }
+            );
+
+            this.updateLocation({
+              lat: newLat,
+              lng: newLng,
+              address: destination.address || `Moving to destination...`
+            });
+
+            if (currentStep >= steps) {
+              clearInterval(interval);
+              this.updateLocation(destination);
+              resolve(destination);
+            }
+          } catch (error) {
+            clearInterval(interval);
+            handleError(error, { component: 'DataStore', action: 'simulateMovement', currentStep });
+            reject(error);
+          }
+        }, stepTime);
+      } catch (error) {
+        handleError(error, { component: 'DataStore', action: 'simulateMovement' });
+        reject(error);
+      }
     });
   }
 
@@ -316,10 +434,18 @@ class DataStore {
       id: Date.now(),
       timestamp: Date.now()
     };
+    // Ensure activities array exists
+    if (!Array.isArray(data.activities)) {
+      data.activities = [];
+    }
+    
     data.activities.unshift(newActivity);
     // Keep only last 50 activities
     if (data.activities.length > 50) {
-      data.activities = data.activities.slice(0, 50);
+      data.activities = safeArraySlice(data.activities, 0, 50, {
+        component: 'DataStore',
+        action: 'addActivity'
+      });
     }
     data.lastUpdated = Date.now();
     this.save(data);
@@ -427,17 +553,55 @@ class DataStore {
     const now = Date.now();
     
     // Clean location history (30 days)
-    const locationRetention = data.user.dataRetention.locationHistoryRetention * 24 * 60 * 60 * 1000;
-    const locationCutoff = now - locationRetention;
-    data.user.locationHistory = data.user.locationHistory.filter(
-      loc => loc.timestamp > locationCutoff
+    const locationRetentionDays = safePropertyAccess(
+      data.user.dataRetention,
+      'locationHistoryRetention',
+      30,
+      { component: 'DataStore', action: 'cleanupExpiredData' }
+    );
+    
+    const locationRetention = safeNumberOperation(
+      () => locationRetentionDays * 24 * 60 * 60 * 1000,
+      30 * 24 * 60 * 60 * 1000,
+      { component: 'DataStore', action: 'cleanupExpiredData', locationRetentionDays }
+    );
+    
+    const locationCutoff = safeNumberOperation(
+      () => now - locationRetention,
+      now - (30 * 24 * 60 * 60 * 1000),
+      { component: 'DataStore', action: 'cleanupExpiredData', now, locationRetention }
+    );
+    
+    data.user.locationHistory = safeArrayFilter(
+      data.user.locationHistory || [],
+      loc => loc && loc.timestamp && loc.timestamp > locationCutoff,
+      { component: 'DataStore', action: 'cleanupExpiredData' }
     );
     
     // Clean activities (90 days)
-    const activityRetention = data.user.dataRetention.activitiesRetention * 24 * 60 * 60 * 1000;
-    const activityCutoff = now - activityRetention;
-    data.activities = data.activities.filter(
-      act => act.timestamp > activityCutoff
+    const activityRetentionDays = safePropertyAccess(
+      data.user.dataRetention,
+      'activitiesRetention',
+      90,
+      { component: 'DataStore', action: 'cleanupExpiredData' }
+    );
+    
+    const activityRetention = safeNumberOperation(
+      () => activityRetentionDays * 24 * 60 * 60 * 1000,
+      90 * 24 * 60 * 60 * 1000,
+      { component: 'DataStore', action: 'cleanupExpiredData', activityRetentionDays }
+    );
+    
+    const activityCutoff = safeNumberOperation(
+      () => now - activityRetention,
+      now - (90 * 24 * 60 * 60 * 1000),
+      { component: 'DataStore', action: 'cleanupExpiredData', now, activityRetention }
+    );
+    
+    data.activities = safeArrayFilter(
+      data.activities || [],
+      act => act && act.timestamp && act.timestamp > activityCutoff,
+      { component: 'DataStore', action: 'cleanupExpiredData' }
     );
     
     data.user.dataRetention.lastCleanup = now;
