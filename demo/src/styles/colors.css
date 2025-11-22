@@ -1,0 +1,17 @@
+:root {
+  --primary: #4A90E2;
+  --primary-dark: #2E5C8A;
+  --primary-light: #7BB5F0;
+  --secondary: #FF9500;
+  --success: #34C759;
+  --warning: #FF9500;
+  --error: #FF3B30;
+  --background: #FFFFFF;
+  --surface: #F8F9FA;
+  --border: #E1E4E8;
+  --text-primary: #1C1C1E;
+  --text-secondary: #8E8E93;
+  --text-tertiary: #C7C7CC;
+  --text-white: #FFFFFF;
+}
+

@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Circle - AI Safety App Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #F8F9FA;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 40px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #000;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 100;
+        }
+
+        .screen-container {
+            background: #FFFFFF;
+            height: calc(100% - 44px);
+            overflow-y: auto;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100%;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Splash Screen */
+        .splash-screen {
+            background: linear-gradient(135deg, #4A90E2 0%, #2E5C8A 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .splash-logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .splash-title {
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .splash-subtitle {
+            font-size: 17px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Onboarding */
+        .onboarding-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .onboarding-illustration {
+            font-size: 120px;
+            margin-bottom: 40px;
+        }
+
+        .onboarding-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .onboarding-text {
+            font-size: 17px;
+            color: #8E8E93;
+            line-height: 1.5;
+            max-width: 300px;
+            margin-bottom: 60px;
+        }
+
+        .page-indicators {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #C7C7CC;
+        }
+
+        .indicator.active {
+            background: #4A90E2;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 20px;
+            position: absolute;
+            bottom: 100px;
+        }
+
+        /* Registration */
+        .registration-screen {
+            padding: 20px;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            margin-bottom: 32px;
+        }
+
+        .back-button {
+            font-size: 17px;
+            color: #4A90E2;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        .nav-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #F8F9FA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+        }
+
+        .form-subtitle {
+            font-size: 17px;
+            color: #8E8E93;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            font-size: 15px;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            height: 56px;
+            background: #F8F9FA;
+            border: 1px solid #E1E4E8;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 17px;
+            color: #1C1C1E;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border: 2px solid #4A90E2;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 24px 0;
+            color: #8E8E93;
+            font-size: 15px;
+        }
+
+        .primary-button {
+            background: #4A90E2;
+            color: #FFFFFF;
+            font-size: 17px;
+            font-weight: 600;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 32px;
+            transition: all 0.2s;
+        }
+
+        .primary-button:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .primary-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .terms-text {
+            font-size: 13px;
+            color: #8E8E93;
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .terms-text a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+
+        /* Home Screen */
+        .content {
+            padding: 20px;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1C1C1E;
+            margin-bottom: 24px;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+        }
+
+        .status-card.protected {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            box-shadow: 0 2px 8px rgba(52, 199, 89, 0.1);
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .status-icon {
+            font-size: 32px;
+        }
+
+        .status-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        .status-body {
+            font-size: 17px;
+            line-height: 1.5;
+            color: #1C1C1E;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4A90E2;
+            border-radius: 4px;
+            width: 35%;
+            transition: width 0.3s ease;
+        }
+
+        .secondary-button {
+            background: #FFFFFF;
+            border: 2px solid #4A90E2;
+            color: #4A90E2;
+            font-size: 17px;
+            font-weight: 600;
+            padding: 14px 24px;
+            border-radius: 12px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .secondary-button:active {
+            transform: scale(0.98);
+            background: rgba(74, 144, 226, 0.05);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 16px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .action-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .action-card:active {
+            transform: scale(0.97);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .action-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .action-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        .circle-section {
+            margin-bottom: 32px;
+        }
+
+        .circle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .circle-members {
+            display: flex;
+            gap: -12px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4A90E2, #2E5C8A);
+            border: 3px solid #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-size: 18px;
+            font-weight: 600;
+            margin-left: -12px;
+        }
+
+        .avatar:first-child {
+            margin-left: 0;
+        }
+
+        .view-all {
+            color: #4A90E2;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .activity-item {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .activity-text {
+            font-size: 15px;
+            color: #1C1C1E;
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 13px;
+            color: #8E8E93;
+        }
+
+        /* Emergency Screens */
+        .emergency-screen {
+            background: linear-gradient(135deg, #FF3B30 0%, #CC2E24 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .emergency-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+
+        .emergency-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .emergency-text {
+            font-size: 17px;
+            opacity: 0.9;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .emergency-button {
+            background: white;
+            color: #FF3B30;
+            font-size: 17px;
+            font-weight: 600;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .emergency-button.secondary {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+
+        .tier1-screen {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            color: #1C1C1E;
+        }
+
+        .tier1-screen .emergency-icon {
+            color: #4A90E2;
+        }
+
+        .tier1-screen .emergency-button {
+            background: #34C759;
+            color: white;
+        }
+
+        .tier2-screen {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+            color: #1C1C1E;
+        }
+
+        .tier2-screen .emergency-icon {
+            color: #FF9500;
+        }
+
+        .location-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 24px 0;
+            text-align: left;
+        }
+
+        .location-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .location-map {
+            width: 100%;
+            height: 120px;
+            background: #E1E4E8;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8E8E93;
+        }
+
+        .location-address {
+            font-size: 15px;
+            color: #1C1C1E;
+            margin-bottom: 4px;
+        }
+
+        .location-time {
+            font-size: 13px;
+            color: #8E8E93;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 390px;
+            height: 83px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid #E1E4E8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            z-index: 50;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-icon {
+            font-size: 24px;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active .tab-icon {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .tab-label {
+            font-size: 10px;
+            color: #8E8E93;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active .tab-label {
+            color: #4A90E2;
+            font-weight: 600;
+        }
+
+        /* Circle Screen */
+        .circle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .circle-member-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .member-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4A90E2, #2E5C8A);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 4px;
+        }
+
+        .member-relation {
+            font-size: 15px;
+            color: #8E8E93;
+        }
+
+        .add-member-button {
+            background: #F8F9FA;
+            border: 2px dashed #C7C7CC;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #4A90E2;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        /* Settings Screen */
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: #E1E4E8;
+        }
+
+        .settings-item {
+            background: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .settings-item:active {
+            background: #F8F9FA;
+        }
+
+        .settings-label {
+            font-size: 17px;
+            color: #1C1C1E;
+        }
+
+        .settings-value {
+            font-size: 15px;
+            color: #8E8E93;
+        }
+
+        .settings-arrow {
+            color: #C7C7CC;
+            font-size: 20px;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            animation: modalSlideUp 0.3s ease;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1C1C1E;
+            margin-bottom: 12px;
+        }
+
+        .modal-text {
+            font-size: 17px;
+            color: #8E8E93;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-button {
+            background: #4A90E2;
+            color: #FFFFFF;
+            font-size: 17px;
+            font-weight: 600;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .modal-button:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .modal-button.secondary {
+            background: transparent;
+            border: 2px solid #4A90E2;
+            color: #4A90E2;
+        }
+
+        .spacer {
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>🔋📶</span>
+        </div>
+
+        <div class="screen-container">
+            <!-- Splash Screen -->
+            <div class="screen splash-screen active" id="splash">
+                <div class="splash-logo">🛡️</div>
+                <div class="splash-title">CIRCLE</div>
+                <div class="splash-subtitle">Your AI Safety Companion</div>
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- Onboarding Screen 1 -->
+            <div class="screen onboarding-screen" id="onboarding1">
+                <div class="onboarding-illustration">🧠</div>
+                <div class="onboarding-title">AI That Learns<br>Your Routine</div>
+                <div class="onboarding-text">Circle understands your daily patterns so it knows when something's wrong—without you lifting a finger.</div>
+                <div class="page-indicators">
+                    <div class="indicator active"></div>
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                </div>
+                <div class="onboarding-actions">
+                    <button class="back-button" onclick="navigateTo('splash')" style="visibility: hidden;">Skip</button>
+                    <button class="primary-button" onclick="navigateTo('onboarding2')">Next →</button>
+                </div>
+            </div>
+
+            <!-- Onboarding Screen 2 -->
+            <div class="screen onboarding-screen" id="onboarding2">
+                <div class="onboarding-illustration">👥</div>
+                <div class="onboarding-title">Your Trusted Circle<br>Protects You</div>
+                <div class="onboarding-text">Invite friends and family to your Circle. They'll get alerts only when you might need help.</div>
+                <div class="page-indicators">
+                    <div class="indicator"></div>
+                    <div class="indicator active"></div>
+                    <div class="indicator"></div>
+                </div>
+                <div class="onboarding-actions">
+                    <button class="back-button" onclick="navigateTo('onboarding1')">← Back</button>
+                    <button class="primary-button" onclick="navigateTo('onboarding3')">Next →</button>
+                </div>
+            </div>
+
+            <!-- Onboarding Screen 3 -->
+            <div class="screen onboarding-screen" id="onboarding3">
+                <div class="onboarding-illustration">🔔</div>
+                <div class="onboarding-title">Always Watching,<br>Never Intrusive</div>
+                <div class="onboarding-text">Works quietly in the background. You'll only hear from us when something's actually wrong.</div>
+                <div class="page-indicators">
+                    <div class="indicator"></div>
+                    <div class="indicator"></div>
+                    <div class="indicator active"></div>
+                </div>
+                <div class="onboarding-actions">
+                    <button class="back-button" onclick="navigateTo('onboarding2')">← Back</button>
+                    <button class="primary-button" onclick="navigateTo('registration')">Get Started</button>
+                </div>
+            </div>
+
+            <!-- Registration Screen -->
+            <div class="screen registration-screen" id="registration">
+                <div class="nav-bar">
+                    <button class="back-button" onclick="navigateTo('onboarding3')">← Back</button>
+                    <div class="nav-title">Get Started</div>
+                    <div style="width: 32px;"></div>
+                </div>
+                <div class="form-title">Let's create your account</div>
+                <div class="form-subtitle">Sign up to start protecting yourself</div>
+                <div class="input-group">
+                    <label class="input-label">📱 Phone Number</label>
+                    <input type="tel" class="text-input" placeholder="+1 (___) ___-____" id="phoneInput">
+                </div>
+                <div class="divider">OR</div>
+                <div class="input-group">
+                    <label class="input-label">📧 Email Address</label>
+                    <input type="email" class="text-input" placeholder="your@email.com" id="emailInput">
+                </div>
+                <button class="primary-button" onclick="completeRegistration()">Continue</button>
+                <div class="terms-text">By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></div>
+            </div>
+
+            <!-- Home Screen - Learning Mode -->
+            <div class="screen" id="home">
+                <div class="nav-bar" style="padding: 12px 20px;">
+                    <div></div>
+                    <div class="nav-title">Circle</div>
+                    <div class="nav-icon" onclick="navigateTo('settings')">⚙️</div>
+                </div>
+                <div class="content">
+                    <div class="greeting">👋 Hey Sarah</div>
+
+                    <div class="status-card learning" id="statusCard">
+                        <div class="status-header">
+                            <span class="status-icon">🧠</span>
+                            <span class="status-title">Learning Your Routine</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-label">Day 5 of 14</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                        <div class="status-body">
+                            I'm learning when you leave home, where you go, and when you return. Help me learn faster by labeling activities.
+                        </div>
+                        <button class="secondary-button" onclick="showModal('learningModal')">Help Me Learn →</button>
+                    </div>
+
+                    <div class="section-title">Quick Actions</div>
+                    <div class="quick-actions">
+                        <div class="action-card" onclick="showModal('walkingModal')">
+                            <div class="action-icon">🏃‍♀️</div>
+                            <div class="action-label">Walking Home</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('goingOutModal')">
+                            <div class="action-icon">📅</div>
+                            <div class="action-label">Going Out</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('travelModal')">
+                            <div class="action-icon">✈️</div>
+                            <div class="action-label">Traveling</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('checkInModal')">
+                            <div class="action-icon">✅</div>
+                            <div class="action-label">Check In</div>
+                        </div>
+                    </div>
+
+                    <div class="circle-section">
+                        <div class="circle-header">
+                            <div class="section-title" style="margin-bottom: 0;">Your Circle (3)</div>
+                            <a href="#" class="view-all" onclick="navigateTo('circle')">View All →</a>
+                        </div>
+                        <div class="circle-members">
+                            <div class="avatar">M</div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #FF9500, #CC7700);">S</div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #34C759, #28A745);">J</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Recent Activity</div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-text">✅ Checked in safe</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-text">👤 Emily asked about you</div>
+                            <div class="activity-time">Yesterday at 9:30 PM</div>
+                        </div>
+                    </div>
+                    <div class="spacer"></div>
+                </div>
+            </div>
+
+            <!-- Home Screen - Protected Mode (Alternative) -->
+            <div class="screen" id="homeProtected">
+                <div class="nav-bar" style="padding: 12px 20px;">
+                    <div></div>
+                    <div class="nav-title">Circle</div>
+                    <div class="nav-icon" onclick="navigateTo('settings')">⚙️</div>
+                </div>
+                <div class="content">
+                    <div class="greeting">👋 Hey Sarah</div>
+
+                    <div class="status-card protected">
+                        <div class="status-header">
+                            <span class="status-icon">🛡️</span>
+                            <span class="status-title">You're Protected</span>
+                        </div>
+                        <div class="status-body">
+                            Everything looks normal. You typically leave work around 6pm. I'll check on you if you're running late.
+                        </div>
+                        <button class="secondary-button" onclick="navigateTo('patterns')">View My Patterns →</button>
+                    </div>
+
+                    <div class="section-title">Quick Actions</div>
+                    <div class="quick-actions">
+                        <div class="action-card" onclick="showModal('walkingModal')">
+                            <div class="action-icon">🏃‍♀️</div>
+                            <div class="action-label">Walking Home</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('goingOutModal')">
+                            <div class="action-icon">📅</div>
+                            <div class="action-label">Going Out</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('travelModal')">
+                            <div class="action-icon">✈️</div>
+                            <div class="action-label">Traveling</div>
+                        </div>
+                        <div class="action-card" onclick="showModal('checkInModal')">
+                            <div class="action-icon">✅</div>
+                            <div class="action-label">Check In</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Recent Activity</div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-text">✅ Checked in safe</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-text">👤 Emily asked about you</div>
+                            <div class="activity-time">Yesterday at 9:30 PM</div>
+                        </div>
+                    </div>
+                    <div class="spacer"></div>
+                </div>
+            </div>
+
+            <!-- Tier 1 Alert -->
+            <div class="screen emergency-screen tier1-screen" id="tier1">
+                <div class="emergency-icon">👋</div>
+                <div class="emergency-title">Just Checking In</div>
+                <div class="emergency-text">You're usually home by now. Everything okay?</div>
+                <button class="emergency-button" onclick="handleTier1Response('safe')">I'm Safe</button>
+                <button class="emergency-button secondary" onclick="handleTier1Response('time')">Need More Time</button>
+                <button class="emergency-button secondary" style="color: #FF3B30; border-color: #FF3B30;" onclick="handleTier1Response('help')">Need Help</button>
+            </div>
+
+            <!-- Tier 2 Alert -->
+            <div class="screen emergency-screen tier2-screen" id="tier2">
+                <div class="emergency-icon">⚠️</div>
+                <div class="emergency-title">We're Concerned</div>
+                <div class="emergency-text">You haven't responded to our check-in. We've tried calling twice with no answer.</div>
+                <div class="location-card">
+                    <div class="location-title">📍 Last Known Location</div>
+                    <div class="location-map">🗺️ Map Preview</div>
+                    <div class="location-address">123 Main St, Dallas, TX</div>
+                    <div class="location-time">10 minutes ago</div>
+                </div>
+                <div class="emergency-text" style="font-size: 15px; margin-bottom: 24px;">Your circle has been notified.</div>
+                <button class="emergency-button" style="background: #34C759; color: white;" onclick="handleTier2Response('safe')">I'm Safe Now</button>
+                <button class="emergency-button secondary" style="color: #FF3B30; border-color: #FF3B30;" onclick="handleTier2Response('help')">I Need Help</button>
+            </div>
+
+            <!-- Tier 3 Emergency -->
+            <div class="screen emergency-screen" id="tier3">
+                <div class="emergency-icon">🚨</div>
+                <div class="emergency-title">EMERGENCY ACTIVE</div>
+                <div class="emergency-text">Your circle has been alerted</div>
+                <div style="background: rgba(255,255,255,0.2); border-radius: 16px; padding: 20px; margin: 24px 0; text-align: left;">
+                    <div style="margin-bottom: 12px;">📍 Sharing real-time location</div>
+                    <div>🎙️ Audio recording started</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: left;">
+                    <div style="margin-bottom: 8px;">👤 Mom - 📞 Calling you</div>
+                    <div style="margin-bottom: 8px;">👤 Sarah - 🏃 On the way</div>
+                    <div>👤 Jake - 👁️ Watching</div>
+                </div>
+                <button class="emergency-button secondary" onclick="cancelEmergency()">Cancel Emergency (Requires PIN)</button>
+                <div style="margin-top: 16px; font-size: 13px; opacity: 0.8;">Started 3 minutes ago</div>
+            </div>
+
+            <!-- Circle Management -->
+            <div class="screen" id="circle">
+                <div class="nav-bar" style="padding: 12px 20px;">
+                    <button class="back-button" onclick="navigateTo('home')">← Back</button>
+                    <div class="nav-title">My Circle</div>
+                    <div style="width: 32px;"></div>
+                </div>
+                <div class="content">
+                    <div class="circle-list">
+                        <div class="circle-member-card">
+                            <div class="member-avatar">M</div>
+                            <div class="member-info">
+                                <div class="member-name">Mom</div>
+                                <div class="member-relation">Family</div>
+                            </div>
+                        </div>
+                        <div class="circle-member-card">
+                            <div class="member-avatar" style="background: linear-gradient(135deg, #FF9500, #CC7700);">S</div>
+                            <div class="member-info">
+                                <div class="member-name">Sarah</div>
+                                <div class="member-relation">Friend</div>
+                            </div>
+                        </div>
+                        <div class="circle-member-card">
+                            <div class="member-avatar" style="background: linear-gradient(135deg, #34C759, #28A745);">J</div>
+                            <div class="member-info">
+                                <div class="member-name">Jake</div>
+                                <div class="member-relation">Friend</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="add-member-button" onclick="showModal('addMemberModal')">+ Add Circle Member</div>
+                    <div class="spacer"></div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="screen" id="settings">
+                <div class="nav-bar" style="padding: 12px 20px;">
+                    <button class="back-button" onclick="navigateTo('home')">← Back</button>
+                    <div class="nav-title">Settings</div>
+                    <div style="width: 32px;"></div>
+                </div>
+                <div class="content">
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <div class="settings-label">Monitoring</div>
+                            <div class="settings-value">On</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Sensitivity</div>
+                            <div class="settings-value">Medium</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Safe Zones</div>
+                            <div class="settings-value">3 locations</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Notifications</div>
+                            <div class="settings-value">All</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Privacy</div>
+                            <div class="settings-value"></div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Account</div>
+                            <div class="settings-value"></div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Help & Support</div>
+                            <div class="settings-value"></div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                    </div>
+                    <div class="spacer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Bar (only show on home screens) -->
+        <div class="tab-bar" id="tabBar" style="display: none;">
+            <div class="tab-item active" onclick="navigateTo('home')">
+                <div class="tab-icon">🏠</div>
+                <div class="tab-label">Home</div>
+            </div>
+            <div class="tab-item" onclick="navigateTo('circle')">
+                <div class="tab-icon">👥</div>
+                <div class="tab-label">Circle</div>
+            </div>
+            <div class="tab-item" onclick="showModal('emergencyTestModal')">
+                <div class="tab-icon">🚨</div>
+                <div class="tab-label">Emergency</div>
+            </div>
+            <div class="tab-item" onclick="navigateTo('settings')">
+                <div class="tab-icon">👤</div>
+                <div class="tab-label">Profile</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="walkingModal">
+        <div class="modal-content">
+            <div class="modal-icon">🏃‍♀️</div>
+            <div class="modal-title">Walking Home</div>
+            <div class="modal-text">I'll monitor your route and check that you arrive safely. Expected arrival: 15 minutes.</div>
+            <button class="modal-button" onclick="closeModal(); alert('Walking mode activated! ✅')">Start Monitoring</button>
+            <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="goingOutModal">
+        <div class="modal-content">
+            <div class="modal-icon">📅</div>
+            <div class="modal-title">Going Out Tonight</div>
+            <div class="modal-text">How long will you be out?</div>
+            <button class="modal-button" onclick="closeModal(); alert('Going out for 1 hour. I\'ll check on you if you\'re late! ✅')">1 Hour</button>
+            <button class="modal-button" onclick="closeModal(); alert('Going out for 2-3 hours. I\'ll check on you if you\'re late! ✅')">2-3 Hours</button>
+            <button class="modal-button" onclick="closeModal(); alert('Going out all night. I\'ll check on you if you\'re late! ✅')">All Night</button>
+            <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="travelModal">
+        <div class="modal-content">
+            <div class="modal-icon">✈️</div>
+            <div class="modal-title">Travel Mode</div>
+            <div class="modal-text">Where are you traveling to?</div>
+            <input type="text" class="text-input" placeholder="Destination" style="margin-bottom: 16px;">
+            <button class="modal-button" onclick="closeModal(); alert('Travel mode activated! ✅')">Start Travel Mode</button>
+            <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="checkInModal">
+        <div class="modal-content">
+            <div class="modal-icon">✅</div>
+            <div class="modal-title">Check In Successful</div>
+            <div class="modal-text">Your circle has been notified that you're safe.</div>
+            <button class="modal-button" onclick="closeModal()">Done</button>
+        </div>
+    </div>
+
+    <div class="modal" id="learningModal">
+        <div class="modal-content">
+            <div class="modal-icon">🧠</div>
+            <div class="modal-title">Help Me Learn</div>
+            <div class="modal-text">Yesterday at 7 PM, you were at Coffee Shop on Main St. What were you doing?</div>
+            <button class="modal-button" onclick="closeModal(); alert('Thanks! I learned you were meeting friends. 🧠')">Meeting Friends</button>
+            <button class="modal-button" onclick="closeModal(); alert('Thanks! I learned you were working. 🧠')">Working</button>
+            <button class="modal-button" onclick="closeModal(); alert('Thanks! I learned you were just hanging out. 🧠')">Just Hanging Out</button>
+            <button class="modal-button secondary" onclick="closeModal()">Skip</button>
+        </div>
+    </div>
+
+    <div class="modal" id="addMemberModal">
+        <div class="modal-content">
+            <div class="modal-icon">👥</div>
+            <div class="modal-title">Add Circle Member</div>
+            <div class="modal-text">Invite someone to your safety circle</div>
+            <input type="text" class="text-input" placeholder="Name" style="margin-bottom: 12px;">
+            <input type="tel" class="text-input" placeholder="Phone Number" style="margin-bottom: 16px;">
+            <button class="modal-button" onclick="closeModal(); alert('Invitation sent! ✅')">Send Invitation</button>
+            <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="emergencyTestModal">
+        <div class="modal-content">
+            <div class="modal-icon">🚨</div>
+            <div class="modal-title">Test Emergency Alerts</div>
+            <div class="modal-text">Choose an alert level to test</div>
+            <button class="modal-button" onclick="closeModal(); navigateTo('tier1')" style="background: #4A90E2;">Tier 1: Check-In</button>
+            <button class="modal-button" onclick="closeModal(); navigateTo('tier2')" style="background: #FF9500;">Tier 2: Concern</button>
+            <button class="modal-button" onclick="closeModal(); navigateTo('tier3')" style="background: #FF3B30;">Tier 3: Emergency</button>
+            <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Navigation system
+        function navigateTo(screenId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show target screen
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+            }
+
+            // Show/hide tab bar
+            const tabBar = document.getElementById('tabBar');
+            if (['home', 'homeProtected', 'circle', 'settings'].includes(screenId)) {
+                tabBar.style.display = 'flex';
+                // Update active tab
+                document.querySelectorAll('.tab-item').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                if (screenId === 'home' || screenId === 'homeProtected') {
+                    document.querySelectorAll('.tab-item')[0].classList.add('active');
+                } else if (screenId === 'circle') {
+                    document.querySelectorAll('.tab-item')[1].classList.add('active');
+                } else if (screenId === 'settings') {
+                    document.querySelectorAll('.tab-item')[3].classList.add('active');
+                }
+            } else {
+                tabBar.style.display = 'none';
+            }
+
+            // Scroll to top
+            document.querySelector('.screen-container').scrollTop = 0;
+        }
+
+        // Modal system
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        // Registration
+        function completeRegistration() {
+            const phone = document.getElementById('phoneInput').value;
+            const email = document.getElementById('emailInput').value;
+            
+            if (phone || email) {
+                // Simulate registration process
+                setTimeout(() => {
+                    navigateTo('home');
+                }, 500);
+            } else {
+                alert('Please enter a phone number or email');
+            }
+        }
+
+        // Emergency handlers
+        function handleTier1Response(response) {
+            if (response === 'safe') {
+                alert('Great! Stay safe. ✅');
+                navigateTo('home');
+            } else if (response === 'time') {
+                alert('No problem! I\'ll check back in 30 minutes. ⏰');
+                navigateTo('home');
+            } else if (response === 'help') {
+                navigateTo('tier3');
+            }
+        }
+
+        function handleTier2Response(response) {
+            if (response === 'safe') {
+                alert('Thank you for responding! Stay safe. ✅');
+                navigateTo('home');
+            } else if (response === 'help') {
+                navigateTo('tier3');
+            }
+        }
+
+        function cancelEmergency() {
+            const pin = prompt('Enter PIN to cancel emergency:');
+            if (pin === '1234') {
+                alert('Emergency canceled. All clear sent to your circle.');
+                navigateTo('home');
+            } else {
+                alert('Incorrect PIN. Emergency remains active.');
+            }
+        }
+
+        // Auto-advance splash screen
+        setTimeout(() => {
+            if (document.getElementById('splash').classList.contains('active')) {
+                navigateTo('onboarding1');
+            }
+        }, 2000);
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        });
+
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
