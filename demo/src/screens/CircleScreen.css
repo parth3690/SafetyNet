@@ -92,3 +92,77 @@
   background: var(--background);
 }
 
+.input-group {
+  margin-bottom: 16px;
+}
+
+.input-label {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: block;
+  font-weight: 500;
+}
+
+.input {
+  width: 100%;
+  height: 56px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 16px;
+  font-size: 17px;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border: 2px solid var(--primary);
+}
+
+.input-error {
+  border-color: var(--error) !important;
+  background-color: #FFF5F5;
+}
+
+.input-error:focus {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.1);
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.success-message {
+  color: var(--success);
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-error-message {
+  background-color: #FFF5F5;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--error);
+  font-size: 15px;
+  text-align: center;
+}
+
+.divider {
+  text-align: center;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+

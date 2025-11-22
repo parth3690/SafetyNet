@@ -332,8 +332,13 @@ const HomeScreen = () => {
           const select = document.getElementById('destination-select');
           const destination = select.value;
           if (destination) {
-            handleTraveling(destination);
-            handleModalAction(`Travel mode activated to ${AUSTIN_LOCATIONS[destination].address}! ✅`);
+            const validation = validateDestination(AUSTIN_LOCATIONS[destination].address);
+            if (validation.valid) {
+              handleTraveling(destination);
+              handleModalAction(`Travel mode activated to ${AUSTIN_LOCATIONS[destination].address}! ✅`);
+            } else {
+              alert(validation.error);
+            }
           } else {
             alert('Please select a destination');
           }
